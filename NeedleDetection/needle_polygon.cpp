@@ -10,15 +10,20 @@ int main() {
     cv::Mat needle_detect_ = img.clone();
 
     cv::Mat roi;   // Matrix to save image
-                   // creating empty mask image
-    cv::Mat mask = cv::Mat::zeros(img.rows, img.cols, CV_8UC1);
-    cv::circle(mask, cv::Point(354, 275), 100, cvScalar(255, 255, 255), -1, 8,
-               0);           //-1 means filled
-    img.copyTo(roi, mask);   // copy values of img to dst if mask is > 0
+    // creating empty mask image
+    cv::Mat mask = cv::Mat::zeros(img.size(), img.type());
+    // determining polygon vertices for roi
+    cv::Point pts[7] = {cv::Point(288, 200), cv::Point(355, 176),
+                        cv::Point(423, 205), cv::Point(442, 325),
+                        cv::Point(352, 375), cv::Point(275, 337),
+                        cv::Point(252, 337)};
+    // Create a binary polygon mask
+    cv::fillConvexPoly(mask, pts, 7, cv::Scalar(255, 255, 255));
+    // Multiply the edges image and the mask to get the output
+    cv::bitwise_and(img, mask, roi);
     cv::imshow("roi", roi);
-
     cv::Mat edge, needle, edge_image;
-    cv::Canny(roi, edge, 50, 60, 3);
+    cv::Canny(roi, edge, 50, 140, 3);
     edge.convertTo(edge_image, CV_8U);
     // Draw an example circle on the video stream
     cv::circle(needle_detect_, cv::Point(354, 275), 100, CV_RGB(255, 0, 0));

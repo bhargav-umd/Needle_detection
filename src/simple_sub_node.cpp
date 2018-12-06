@@ -47,10 +47,18 @@ class ImageConverter {
         // cv::waitKey(1);
 
         cv::Mat img = cv_ptr->image;
-        cv::Mat needle_detect_ = img.clone();
+        cv::Mat roi;   // Matrix to save image
+                       // creating empty mask image
+        cv::Mat mask = cv::Mat::zeros(img.rows, img.cols, CV_8UC1);
+        cv::circle(mask, cv::Point(354, 275), 85, cvScalar(255, 255, 255), -1,
+                   8,
+                   0);           //-1 means filled
+        img.copyTo(roi, mask);   // copy values of img to dst if mask is > 0
+        cv::imshow("roi", roi);
 
+        cv::Mat needle_detect_ = img.clone();
         cv::Mat edge, needle, edge_image;
-        cv::Canny(img, edge, 50, 100, 3);
+        cv::Canny(roi, edge, 50, 140, 3);
         edge.convertTo(edge_image, CV_8U);
 
         std::vector<cv::Vec4i> lines;
@@ -58,11 +66,30 @@ class ImageConverter {
         std::cout << "the number of lines are " << lines.size() << std::endl;
         for (size_t i = 0; i < lines.size(); i++) {
             cv::Vec4i l = lines[i];
-            line(needle_detect_, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]),
-                 cvScalar(0, 0, 255), 1, CV_AA);
+            //	    line(needle_detect_, cv::Point(l[0], l[1]), cv::Point(l[2],
+            // l[3]),
+            //		 cvScalar(0, 0, 255), 1, CV_AA);
+
+            double leng =
+                cv::norm(cv::Point(l[0], l[1]) - cv::Point(l[2], l[3]));
+
+            if (leng < 40 && leng > 30) {
+                line(needle_detect_, cv::Point(l[0], l[1]),
+                     cv::Point(l[2], l[3]), cvScalar(0, 0, 255), 1, CV_AA);
+                std::cout << " length of line number: " << i << " is : " << leng
+                          << std::endl;
+                // line(needle_detect_, cv::Point(l[0], l[1]), cv::Point(l[2],
+                // l[3]),
+                //   cvScalar(255, 255, 255), 2, CV_AA);
+
+                std::cout << "the coordinates of the lines are: "
+                          << cv::Point(l[0], l[1]) << " and "
+                          << cv::Point(l[2], l[3]) << std::endl;
+            };
         }
         cv::imshow("edge", edge);
-        cv::imshow("needle", needle_detect_);
+        // cv::imshow("needle", needle_detect_);
+
         cv::waitKey(1);
     }
 };
