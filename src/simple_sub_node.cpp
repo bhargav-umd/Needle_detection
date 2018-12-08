@@ -50,7 +50,7 @@ class ImageConverter {
         cv::Mat roi;   // Matrix to save image
                        // creating empty mask image
         cv::Mat mask = cv::Mat::zeros(img.rows, img.cols, CV_8UC1);
-        cv::circle(mask, cv::Point(354, 275), 85, cvScalar(255, 255, 255), -1,
+        cv::circle(mask, cv::Point(354, 275), 80, cvScalar(255, 255, 255), -1,
                    8,
                    0);           //-1 means filled
         img.copyTo(roi, mask);   // copy values of img to dst if mask is > 0
@@ -61,89 +61,91 @@ class ImageConverter {
         cv::Canny(roi, edge, 50, 140, 3);
         edge.convertTo(edge_image, CV_8U);
         cv::imshow("edge", edge_image);
-        cv::Mat canny_output;
-        std::vector<std::vector<cv::Point> > contours;
-        std::vector<cv::Vec4i> hierarchy;
 
-        findContours(edge_image, contours, hierarchy, cv::RETR_TREE,
-                     cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-
-        // get the moments
-        std::vector<cv::Moments> mu(contours.size());
-        for (int i = 0; i < contours.size(); i++) {
-            mu[i] = moments(contours[i], false);
-        }
-
-        // get the centroid of figures.
-        std::vector<cv::Point2f> mc(contours.size());
-        for (int i = 0; i < contours.size(); i++) {
-            mc[i] = cv::Point2f(mu[i].m10 / mu[i].m00, mu[i].m01 / mu[i].m00);
-        }
-
-        // draw contours
-        double needle_area = 0;
-        int needle_index = 0;
-        cv::Mat drawing(edge_image.size(), CV_8UC3, cvScalar(255, 255, 255));
-        for (int i = 0; i < contours.size(); i++) {
-            double area = contourArea(contours[i]);
-            double alen = arcLength(contours[i], 0);
-            std::cout << "The area of contour" << i << "is: " << area
-                      << std::endl;
-            std::cout << "Lenght of contour " << alen << std::endl;
-            if (area > 20 && area < 30) {
-                needle_area = area;
-                needle_index = i;
-            }
-        }
-        std::cout << " ---------------- " << std::endl;
-        std::cout << "Needle location is : " << mc[needle_index] << std::endl;
-        std::cout << " Needle index and area: " << needle_index << " and "
-                  << needle_area << std::endl;
-        cv::Scalar color = cvScalar(167, 151, 0);   // B G R values
-        std::cout << " ---------------- " << std::endl;
-
-        // drawContours(drawing, contours, needle_index, color, 2, 8, hierarchy,
+        //	cv::Mat canny_output;
+        //	std::vector<std::vector<cv::Point> > contours;
+        //	std::vector<cv::Vec4i> hierarchy;
+        //
+        //	findContours(edge_image, contours, hierarchy, cv::RETR_TREE,
+        //		     cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+        //
+        //	// get the moments
+        //	std::vector<cv::Moments> mu(contours.size());
+        //	for (int i = 0; i < contours.size(); i++) {
+        //	    mu[i] = moments(contours[i], false);
+        //	}
+        //
+        //	// get the centroid of figures.
+        //	std::vector<cv::Point2f> mc(contours.size());
+        //	for (int i = 0; i < contours.size(); i++) {
+        //	    mc[i] = cv::Point2f(mu[i].m10 / mu[i].m00, mu[i].m01 /
+        // mu[i].m00);
+        //	}
+        //
+        //	// draw contours
+        //	double needle_area = 0;
+        //	int needle_index = 0;
+        //	cv::Mat drawing(edge_image.size(), CV_8UC3, cvScalar(255, 255,
+        // 255));
+        //	for (int i = 0; i < contours.size(); i++) {
+        //	    double area = contourArea(contours[i]);
+        //	    double alen = arcLength(contours[i], 0);
+        //	    std::cout << "The area of contour" << i << "is: " << area
+        //		      << std::endl;
+        //	    std::cout << "Lenght of contour " << alen << std::endl;
+        //	    cv::Scalar color = cvScalar(167, 151, 0);   // B G R values
+        //
+        //	    drawContours(drawing, contours, i, color, 2, 8, hierarchy,
         // 0,
-        //	     cv::Point());
-        circle(drawing, mc[needle_index], 4, color, -1, 8, 0);
+        //			 cv::Point());
+        //	    circle(drawing, mc[i], 4, color, -1, 8, 0);
+        //
+        //	    if (area > 20 && area < 30) {
+        //		needle_area = area;
+        //		needle_index = i;
+        //	    }
+        //	}
+        //	std::cout << " ---------------- " << std::endl;
+        //	std::cout << "Needle location is : " << mc[needle_index] <<
+        // std::endl;
+        //	std::cout << " Needle index and area: " << needle_index << " and
+        //"
+        //		  << needle_area << std::endl;
+        //	std::cout << " ---------------- " << std::endl;
+        //
+        //	cv::imshow("Contours", drawing);
+        //
+        std::vector<cv::Vec4i> lines;
+        HoughLinesP(edge_image, lines, 1, CV_PI / 180, 10, 10, 10);
+        std::cout << "the number of lines are " << lines.size() << std::endl;
+        for (size_t i = 0; i < lines.size(); i++) {
+            cv::Vec4i l = lines[i];
+            //            line(needle_detect_, cv::Point(l[0], l[1]),
+            //            cv::Point(l[2], l[3]),
+            //                 cvScalar(0, 0, 255), 1, CV_AA
+            double leng =
+                cv::norm(cv::Point(l[0], l[1]) - cv::Point(l[2], l[3]));
+            //            std::cout << " length of line number: " << i << " is
+            //            :" << leng
+            //                      << std::endl;
+            //
+            if (leng < 44.5 && leng > 39) {
+                line(needle_detect_, cv::Point(l[0], l[1]),
+                     cv::Point(l[2], l[3]), cvScalar(255, 255, 255), 2, CV_AA);
+                cv::Point midi =
+                    (cv::Point(l[0], l[1]) + cv::Point(l[2], l[3])) * .5;
+                circle(needle_detect_, midi, 4, cvScalar(255, 0, 0), -1, 8, 0);
+                std::cout << "Mid point is " << midi << std::endl;
+                std::cout << "---------------------" << std::endl;
+                std::cout << "the coordinates of the lines are: "
+                          << cv::Point(l[0], l[1]) << " and "
+                          << cv::Point(l[2], l[3]) << std::endl;
+                std::cout << "---------------------" << std::endl;
+            };
+        }
+        cv::imshow("edge", edge);
+        cv::imshow("needle", needle_detect_);
 
-        cv::imshow("Contours", drawing);
-
-        //        std::vector<cv::Vec4i> lines;
-        //        HoughLinesP(edge_image, lines, 1, CV_PI / 180, 30, 30, 10);
-        //        std::cout << "the number of lines are " << lines.size() <<
-        //        std::endl;
-        //        for (size_t i = 0; i < lines.size(); i++) {
-        //            cv::Vec4i l = lines[i];
-        //            //	    line(needle_detect_, cv::Point(l[0], l[1]),
-        //            cv::Point(l[2],
-        //            // l[3]),
-        //            //		 cvScalar(0, 0, 255), 1, CV_AA);
-        //
-        //            double leng =
-        //                cv::norm(cv::Point(l[0], l[1]) - cv::Point(l[2],
-        //                l[3]));
-        //
-        //            if (leng < 40 && leng > 30) {
-        //                line(needle_detect_, cv::Point(l[0], l[1]),
-        //                     cv::Point(l[2], l[3]), cvScalar(0, 0, 255), 1,
-        //                     CV_AA);
-        //                std::cout << " length of line number: " << i << " is :
-        //                " << leng
-        //                          << std::endl;
-        //                // line(needle_detect_, cv::Point(l[0], l[1]),
-        //                cv::Point(l[2],
-        //                // l[3]),
-        //                //   cvScalar(255, 255, 255), 2, CV_AA);
-        //
-        //                std::cout << "the coordinates of the lines are: "
-        //                          << cv::Point(l[0], l[1]) << " and "
-        //                          << cv::Point(l[2], l[3]) << std::endl;
-        //            };
-        //        }
-        //        cv::imshow("edge", edge);
-        //        // cv::imshow("needle", needle_detect_);
-        //
         cv::waitKey(1);
     }
 };
