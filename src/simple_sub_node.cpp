@@ -4,6 +4,7 @@
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include "std_msgs/Float64.h"
 #include "std_msgs/MultiArrayDimension.h"
 #include "std_msgs/MultiArrayLayout.h"
 
@@ -17,7 +18,7 @@ class ImageConverter {
     image_transport::Subscriber image_sub_;
     image_transport::Publisher image_pub_;
     ros::Publisher mid_pub_ =
-        nh_.advertise<std_msgs::Float64MultiArray>("needle_locate", 1);
+        nh_.advertise<std_msgs::Float64>("needle_locate", 1);
 
  public:
     ImageConverter() : it_(nh_) {
@@ -77,41 +78,46 @@ class ImageConverter {
         std::cout << "the number of lines are " << lines.size() << std::endl;
         for (size_t i = 0; i < lines.size(); i++) {
             cv::Vec4i l = lines[i];
-            //            line(needle_detect_, cv::Point(l[0], l[1]),
-            //            cv::Point(l[2], l[3]),
-            //                 cvScalar(0, 0, 255), 1, CV_AA
+            // line(needle_detect_, cv::Point(l[0], l[1]), cv::Point(l[2],
+            // l[3]),
+            //   cvScalar(0, 0, 255), 1, CV_AA);
             double leng =
                 cv::norm(cv::Point(l[0], l[1]) - cv::Point(l[2], l[3]));
-            //            std::cout << " length of line number: " << i << " is
-            //            :" << leng
-            //                      << std::endl;
+            // std::cout << " length of line number: " << i << " is :" << leng
+            //        << std::endl;
+            // std::cout << "---------------------" << std::endl;
             //
-            if (leng < 44.5 && leng > 39) {
+            if (leng < 44.5 && leng > 37) {
                 line(needle_detect_, cv::Point(l[0], l[1]),
                      cv::Point(l[2], l[3]), cvScalar(255, 255, 255), 2, CV_AA);
                 midi = (cv::Point(l[0], l[1]) + cv::Point(l[2], l[3])) * .5;
                 circle(needle_detect_, midi, 4, cvScalar(255, 0, 0), -1, 8, 0);
-                std::cout << "Mid point is " << midi << std::endl;
-                std::cout << "---------------------" << std::endl;
-                std::cout << "the coordinates of the lines are: "
-                          << cv::Point(l[0], l[1]) << " and "
-                          << cv::Point(l[2], l[3]) << std::endl;
-                std::cout << "---------------------" << std::endl;
+                // std::cout << "Mid point is " << midi << std::endl;
+                // std::cout << "the coordinates of the lines are: "
+                //        << cv::Point(l[0], l[1]) << " and "
+                //      << cv::Point(l[2], l[3]) << std::endl;
+                // std::cout << "---------------------" << std::endl;
             };
         }
         cv::imshow("edge", edge);
         cv::imshow("needle", needle_detect_);
-
+        std::cout << "---------------------" << std::endl;
         std::cout << "the mid point is xxxxxx:  " << midi.x << "and y is "
                   << midi.y << std::endl;
+        std::cout << "---------------------" << std::endl;
 
-        std_msgs::Float64MultiArray x;
+        std_msgs::Float64 loc;
+        // float test;
 
-        x.data.push_back(midi.x);
-        x.data.push_back(midi.y);
+        loc.data = (-10 * (midi.x) / 3) + 2940;
+        if (loc.data == 2940) {
+            loc.data = 1500;
+        }
+        // x.data.push_back(midi.x);
+        // x.data.push_back(midi.y);
 
         image_pub_.publish(cv_ptr->toImageMsg());
-        mid_pub_.publish(x);
+        mid_pub_.publish(loc);
 
         cv::waitKey(1);
     }
